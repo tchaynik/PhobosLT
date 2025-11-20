@@ -124,6 +124,11 @@ uint16_t Config::getFrequency() {
     return conf.frequency;
 }
 
+void Config::setFrequency(uint16_t frequency) {
+    conf.frequency = frequency;
+    modified = true;  // Позначаємо, що конфігурація змінена для збереження в EEPROM
+}
+
 uint32_t Config::getMinLapMs() {
     return conf.minLap * 100;
 }

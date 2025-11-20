@@ -21,7 +21,7 @@ static const char *wifi_ap_password = "phoboslt";
 static const char *wifi_ap_address = "20.0.0.1";
 String wifi_ap_ssid;
 
-void Webserver::init(Config *config, LapTimer *lapTimer, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l) {
+void Webserver::init(Config *config, LapTimer *lapTimer, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l, OledDisplay *oledDisplay, ButtonHandler *buttonHandler) {
 
     ipAddress.fromString(wifi_ap_address);
 
@@ -30,6 +30,8 @@ void Webserver::init(Config *config, LapTimer *lapTimer, BatteryMonitor *batMoni
     monitor = batMonitor;
     buz = buzzer;
     led = l;
+    oled = oledDisplay;
+    buttons = buttonHandler;
 
     wifi_ap_ssid = String(wifi_ap_ssid_prefix) + "_" + WiFi.macAddress().substring(WiFi.macAddress().length() - 6);
     wifi_ap_ssid.replace(":", "");
@@ -63,6 +65,30 @@ void Webserver::sendLaptimeEvent(uint32_t lapTime) {
     events.send(buf, "lap");
 }
 
+void Webserver::sendCountdownBeepEvent(int countNumber) {
+    if (!servicesStarted) return;
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%d", countNumber);
+    events.send(buf, "countdown");
+}
+
+void Webserver::sendRaceStartEvent() {
+    if (!servicesStarted) return;
+    events.send("start", "race");
+}
+
+void Webserver::sendLapCompleteEvent(int lapNumber, uint32_t lapTime) {
+    if (!servicesStarted) return;
+    char buf[32];
+    snprintf(buf, sizeof(buf), "{\"lap\":%d,\"time\":%u}", lapNumber, lapTime);
+    events.send(buf, "lapComplete");
+}
+
+void Webserver::sendRaceFinishEvent() {
+    if (!servicesStarted) return;
+    events.send("finish", "race");
+}
+
 void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
     if (timer->isLapAvailable()) {
         sendLaptimeEvent(timer->getLapTime());
@@ -91,6 +117,7 @@ void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
                 buz->beep(200);
                 led->off();
                 wifiConnected = true;
+                updateOledDisplay();  // Оновлюємо OLED при підключенні
                 break;
             default:
                 break;
@@ -122,6 +149,7 @@ void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
                 WiFi.softAPConfig(ipAddress, ipAddress, netMsk);
                 WiFi.softAP(wifi_ap_ssid.c_str(), wifi_ap_password);
                 startServices();
+                updateOledDisplay();  // Оновлюємо OLED при запуску AP
                 buz->beep(1000);
                 led->on(1000);
                 break;
@@ -354,4 +382,49 @@ Battery Voltage:\t%0.1fv";
     startMDNS();
 
     servicesStarted = true;
+}
+
+void Webserver::updateOledDisplay() {
+    if (!oled || !oled->isInitialized()) return;
+    
+    String ssid = "";
+    String ip = "";
+    String channel_info = "R1";  // За замовчуванням
+    String raceStatus = "";
+    bool blinkBand = false;
+    wifi_mode_t mode = WiFi.getMode();
+    
+    // Отримуємо інформацію про канал від ButtonHandler
+    if (buttons) {
+        channel_info = buttons->getChannelInfo();
+        blinkBand = buttons->isBandModeActive();
+    }
+    
+    // Отримуємо статус гонки від LapTimer
+    bool timerActive = false;
+    if (timer) {
+        raceStatus = timer->getRaceStatus();
+        // Таймер активний якщо стан не "Wait start" або "Stopped"
+        timerActive = (raceStatus != "Wait start" && raceStatus != "Stopped");
+        
+        // Оновлюємо стан таймера в кнопках
+        if (buttons) {
+            buttons->setTimerActive(timerActive);
+        }
+    }
+    
+    if (mode == WIFI_AP) {
+        ssid = wifi_ap_ssid;
+        ip = WiFi.softAPIP().toString();
+    } else if (mode == WIFI_STA && WiFi.status() == WL_CONNECTED) {
+        ssid = WiFi.SSID();
+        ip = WiFi.localIP().toString();
+    } else {
+        // WiFi не підключений
+        oled->displayMessage("PhobosLT", "WiFi: OFF", 
+                           channel_info.length() > 0 ? ("CH:" + channel_info) : "", "");
+        return;
+    }
+    
+    oled->displayWiFiInfo(ssid, ip, mode, channel_info, blinkBand, raceStatus, timerActive);
 }

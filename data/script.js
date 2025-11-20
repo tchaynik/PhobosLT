@@ -548,6 +548,73 @@ if (!!window.EventSource) {
     },
     false
   );
+
+  // Обробник countdown біпів
+  source.addEventListener(
+    "countdown",
+    function (e) {
+      var countNumber = parseInt(e.data);
+      console.log("Countdown beep:", countNumber);
+      
+      // Генеруємо короткий біп 500Hz на 250мс (як на buzzer)
+      beep(250, 500, "sine");
+      
+      // Без TTS озвучки - тільки біп
+    },
+    false
+  );
+
+  // Обробник звуку старту гонки
+  source.addEventListener(
+    "race",
+    function (e) {
+      if (e.data === "start") {
+        console.log("Race start!");
+        
+        // Генеруємо звук старту 800Hz на 500мс (як на buzzer)
+        beep(500, 800, "sine");
+        
+        // Запускаємо таймер на сторінці (без TTS озвучки)
+        startTimer();
+      } else if (e.data === "finish") {
+        console.log("Race finish!");
+        
+        // Генеруємо звук зупинки 800Hz на 500мс
+        beep(500, 800, "sine");
+        
+        // Зупиняємо таймер та озвучуємо FINISH
+        stopTimer();
+        queueSpeak(`<div>FINISH</div>`);
+      }
+    },
+    false
+  );
+
+  // Обробник фіксації кола
+  source.addEventListener(
+    "lapComplete",
+    function (e) {
+      var data = JSON.parse(e.data);
+      var lapNumber = data.lap;
+      var lapTime = data.time;
+      var timeInSeconds = (lapTime / 1000).toFixed(2);
+      
+      console.log("Lap complete:", lapNumber, "Time:", timeInSeconds);
+      
+      // Генеруємо біп фіксації кола 500Hz на 250мс
+      beep(250, 500, "sine");
+      
+      // Озвучуємо результат: "Lap 1, 4.23"
+      var seconds = Math.floor(timeInSeconds);
+      var hundredths = Math.round((timeInSeconds - seconds) * 100);
+      var announcement = `Lap ${lapNumber}, ${seconds} ${hundredths}`;
+      queueSpeak(`<div>${announcement}</div>`);
+      
+      // Додаємо коло до таблиці (використовуємо існуючу функцію)
+      addLap(timeInSeconds);
+    },
+    false
+  );
 }
 
 function setBandChannelIndex(freq) {

@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "RX5808.h"
 #include "buzzer.h"
 #include "config.h"
@@ -6,6 +7,7 @@
 
 typedef enum {
     STOPPED,
+    COUNTDOWN,  // Новий стан для обратного відліку
     WAITING,
     RUNNING
 } laptimer_state_e;
@@ -22,6 +24,17 @@ class LapTimer {
     uint8_t getRssi();
     uint32_t getLapTime();
     bool isLapAvailable();
+    
+    // Додаткові методи для OLED дисплея
+    laptimer_state_e getState() { return state; }
+    uint8_t getLapCount() { return lapCount; }
+    
+    // Колбеки для звукових подій на веб-сторінці
+    void setCountdownBeepCallback(void (*callback)(int countNumber));
+    void setRaceStartCallback(void (*callback)());
+    void setLapCompleteCallback(void (*callback)(int lapNumber, uint32_t lapTime));
+    void setRaceFinishCallback(void (*callback)());
+    String getRaceStatus(); // Повертає статус для OLED
 
    private:
     laptimer_state_e state = STOPPED;
@@ -40,8 +53,19 @@ class LapTimer {
 
     uint8_t rssiPeak;
     uint32_t rssiPeakTimeMs;
+    
+    // Countdown змінні
+    uint32_t countdownStartTime;
+    uint32_t lastCountdownBeep;
+    uint8_t countdownCounter;
 
     bool lapAvailable = false;
+    
+    // Колбеки для веб-подій
+    void (*countdownBeepCallback)(int countNumber) = nullptr;
+    void (*raceStartCallback)() = nullptr;
+    void (*lapCompleteCallback)(int lapNumber, uint32_t lapTime) = nullptr;
+    void (*raceFinishCallback)() = nullptr;
 
     void lapPeakCapture();
     bool lapPeakCaptured();

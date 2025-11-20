@@ -4,7 +4,8 @@
 
 typedef enum {
     BUZZER_IDLE,
-    BUZZER_BEEPING
+    BUZZER_BEEPING,
+    BUZZER_TONE
 } buzzer_state_e;
 
 class Buzzer {
@@ -12,6 +13,8 @@ class Buzzer {
     void init(uint8_t pin, bool inverted);
     void handleBuzzer(uint32_t currentTimeMs);
     void beep(uint32_t timeMs);
+    void tone(uint32_t frequency, uint32_t timeMs);  // Новий метод для тонів
+    void noTone();  // Зупинка тону
 
    private:
     buzzer_state_e buzzerState = BUZZER_IDLE;
@@ -19,4 +22,5 @@ class Buzzer {
     uint8_t initialState = LOW;
     uint32_t beepTimeMs;
     uint32_t startTimeMs;
+    uint32_t currentFrequency = 0;
 };
