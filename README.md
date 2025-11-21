@@ -1,21 +1,41 @@
 ![PhobosLT](assets/wq.png)![Logo](assets/logo.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Join us on Discord!](https://img.shields.io/discord/1180943146696319126)](https://discord.gg/D3MgfvsnAw)
-# Support PhobosLT
-**Affordable FPV single node Race Timing solution**
 
-If you like this project you can support it by contributing to the codebase, testing and giving feedback, sharing new ideas and helping spread the PhobosLT gospel. You can also consider buying me a bubble tea or a beer, it will fuel me to make the project better!
+# PhobosLT FPV Timer - ESP32C3 Ready! 🚀
 
-[![Donate to PhobosLT](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/phoboslt)
+**Доступний FPV таймер для одиночних вузлів з ESP32C3 та OLED дисплеєм**
 
-# About
+## ⚡ Швидкий старт для ESP32C3
 
-Phobos LapTimer (or PhobosLT) is a simple but mighty lap timing solution for 5.8GHz FPV pilots. It is designed for personal use and with small drones in mind (2 inch or less), but there is nothing against running it with bigger drones! It is a small standalone device that is self powered and communicates over WiFi with a phone, tablet or laptop. The goal of the project is to have a simple to use and small device that can be used anywhere whenever you want to do a whoop race practice session in your living room or at a local training venue with friends with no fuss.
-Parts of the code are based on [RotorHazard](https://github.com/RotorHazard/RotorHazard) and [ExpressLRS](https://github.com/ExpressLRS/ExpressLRS). Big kudos to people behind these organizations, they are doing A LOT for the community and are shaping the future of FPV. If you don't know these projects yet and have some time, do check them out!
+### 📋 Необхідні компоненти:
+- **ESP32-C3** DevKit
+- **OLED дисплей 0.42"** (72x40) - SSD1306  
+- **RX5808** модуль FPV прийомника
+- **2 кнопки** управління
+- **Buzzer** + **LED** індикатор
 
-### Features
+### 🔧 Підключення:
+```
+GPIO0 - BOOT Button    | GPIO1 - CHANNEL Button
+GPIO2 - OLED SDA       | GPIO3 - OLED SCL  
+GPIO4 - LED            | GPIO5 - BUZZER
+GPIO6 - RX5808 DATA    | GPIO7 - RX5808 SEL
+GPIO8 - RX5808 CLK     | GPIO9 - RX5808 RSSI
+GPIO10 - VBAT Monitor
+```
 
-PhobosLT has the following features:
+### 🚀 Збірка:
+1. Встановіть **PlatformIO** у VS Code
+2. Відкрийте проект і виберіть `ESP32C3`  
+3. Збудуйте: **Ctrl+Alt+B** ✓
+4. Завантажте: **Ctrl+Alt+U** →
+
+### 🌐 Використання:
+1. Підключіться до WiFi: `PhobosLT-XXXXXX`
+2. Відкрийте: `http://192.168.4.1`
+3. Керування кнопками + веб-інтерфейс
+4. Звукові сигнали синхронізовані з браузером!
 - Single node timing of 5.8GHz Analog, HDZero, Walksnail systems.
 - Voice callouts, optionally including pilot name.
 - Real time RSSI readout and calibration - allows for timing even in small spaces like a 16m^2 or 200 ft^2 room.

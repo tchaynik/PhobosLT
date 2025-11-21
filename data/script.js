@@ -615,6 +615,40 @@ if (!!window.EventSource) {
     },
     false
   );
+
+  // Обробник попередження про низький заряд батареї
+  source.addEventListener(
+    "batteryWarning",
+    function (e) {
+      var data = JSON.parse(e.data);
+      var voltage = data.voltage;
+      var percentage = data.percentage;
+      
+      console.log("Battery warning:", voltage + "V (" + percentage + "%)");
+      
+      // Генеруємо довгий попереджувальний біп
+      beep(1000, 300, "sine");
+      setTimeout(() => beep(1000, 300, "sine"), 300);
+      
+      // Озвучуємо рівень заряду: "Battery 8%"
+      var announcement = `Battery ${percentage} percent`;
+      queueSpeak(`<div>${announcement}</div>`);
+      
+      // Оновлюємо індикатор батареї на сторінці (якщо відкрита WiFi вкладка)
+      if (document.getElementById('batteryVoltage')) {
+        document.getElementById('batteryVoltage').textContent = voltage + 'V';
+        document.getElementById('batteryPercentage').textContent = percentage + '%';
+        
+        // Оновлюємо візуальний індикатор
+        const batteryFill = document.getElementById('batteryFill');
+        if (batteryFill) {
+          batteryFill.style.width = percentage + '%';
+          batteryFill.className = 'battery-fill battery-critical';
+        }
+      }
+    },
+    false
+  );
 }
 
 function setBandChannelIndex(freq) {
@@ -625,5 +659,515 @@ function setBandChannelIndex(freq) {
         channelSelect.selectedIndex = j;
       }
     }
+  }
+}
+
+// WiFi Management Functions
+function initWiFiTab() {
+  // Handle WiFi mode radio buttons
+  const wifiModeRadios = document.querySelectorAll('input[name="wifiModeSelect"]');
+  const clientConfig = document.getElementById('clientConfig');
+  const apConfig = document.getElementById('apConfig');
+  
+  wifiModeRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      if (this.value === 'STA') {
+        clientConfig.style.display = 'block';
+        apConfig.style.display = 'none';
+      } else {
+        clientConfig.style.display = 'none';
+        apConfig.style.display = 'block';
+      }
+    });
+  });
+}
+
+// Load WiFi status and apply settings
+function loadWiFiStatus() {
+  fetch('/api/wifi/status')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('wifiMode').textContent = data.mode === 'AP' ? 'Access Point' : 'Client';
+      document.getElementById('currentSSID').textContent = data.ssid;
+      document.getElementById('ipAddress').textContent = data.ip;
+      document.getElementById('signalStrength').textContent = data.signal || 'N/A';
+      
+      // Set radio button based on current mode
+      const modeRadio = document.querySelector(`input[value="${data.mode}"]`);
+      if (modeRadio) {
+        modeRadio.checked = true;
+        modeRadio.dispatchEvent(new Event('change'));
+      }
+      
+      // Fill current settings
+      if (data.mode === 'AP') {
+        document.getElementById('apSSID').value = data.ssid;
+      } else {
+        document.getElementById('ssid').value = data.ssid;
+      }
+    })
+    .catch(error => {
+      console.error('Failed to load WiFi status:', error);
+    });
+}
+
+// Battery status loading function
+function loadBatteryStatus() {
+  fetch('/api/battery/status')
+    .then(response => response.json())
+    .then(data => {
+      const voltage = data.voltage;
+      const percentage = data.stepPercentage;
+      
+      // Оновлюємо глобальний footer індикатор (завжди)
+      updateFooterBatteryIndicator(voltage, percentage);
+      
+      // Оновлюємо WiFi вкладку тільки якщо вона відкрита
+      const batteryVoltageEl = document.getElementById('batteryVoltage');
+      if (batteryVoltageEl) {
+        batteryVoltageEl.textContent = voltage + 'V';
+        document.getElementById('batteryPercentage').textContent = percentage + '%';
+        
+        const batteryFill = document.getElementById('batteryFill');
+        if (batteryFill) {
+          updateBatteryFillIndicator(batteryFill, percentage);
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Failed to load battery status:', error);
+      // Fallback values для footer
+      const footerBatteryText = document.getElementById('footerBatteryText');
+      if (footerBatteryText) {
+        footerBatteryText.textContent = 'N/A';
+      }
+    });
+}
+
+// Оновлення footer індикатора батареї
+function updateFooterBatteryIndicator(voltage, percentage) {
+  const footerBatteryText = document.getElementById('footerBatteryText');
+  const footerBatteryFill = document.getElementById('footerBatteryFill');
+  
+  if (footerBatteryText && footerBatteryFill) {
+    footerBatteryText.textContent = `${voltage}V (${percentage}%)`;
+    updateBatteryFillIndicator(footerBatteryFill, percentage);
+  }
+}
+
+// Універсальна функція для оновлення індикатора заливки батареї
+function updateBatteryFillIndicator(fillElement, percentage) {
+  fillElement.style.width = percentage + '%';
+  
+  // Встановлюємо колір залежно від рівня заряду
+  fillElement.className = 'battery-fill';
+  if (percentage >= 75) {
+    fillElement.classList.add('battery-full');
+  } else if (percentage >= 50) {
+    fillElement.classList.add('battery-high');
+  } else if (percentage >= 25) {
+    fillElement.classList.add('battery-medium');
+  } else if (percentage > 0) {
+    fillElement.classList.add('battery-low');
+  } else {
+    fillElement.classList.add('battery-critical');
+  }
+}
+
+function scanWifiNetworks() {
+  const scanButton = event.target;
+  const networkList = document.getElementById('networkList');
+  const scanResults = document.getElementById('wifiScanResults');
+  
+  scanButton.textContent = 'Scanning...';
+  scanButton.disabled = true;
+  
+  fetch('/api/wifi/scan')
+    .then(response => response.json())
+    .then(data => {
+      networkList.innerHTML = '';
+      
+      if (data.networks && data.networks.length > 0) {
+        data.networks.forEach(network => {
+          const networkDiv = document.createElement('div');
+          networkDiv.className = 'network-item';
+          networkDiv.onclick = () => selectNetwork(network.ssid);
+          
+          networkDiv.innerHTML = `
+            <span>${network.ssid}</span>
+            <div>
+              <span class="network-signal">Signal: ${network.rssi}dBm</span>
+              ${network.secure ? '<span class="network-secure">🔒</span>' : ''}
+            </div>
+          `;
+          
+          networkList.appendChild(networkDiv);
+        });
+        
+        scanResults.style.display = 'block';
+      } else {
+        networkList.innerHTML = '<div style="padding: 10px; text-align: center;">No networks found</div>';
+        scanResults.style.display = 'block';
+      }
+    })
+    .catch(error => {
+      console.error('WiFi scan failed:', error);
+      networkList.innerHTML = '<div style="padding: 10px; text-align: center; color: red;">Scan failed</div>';
+      scanResults.style.display = 'block';
+    })
+    .finally(() => {
+      scanButton.textContent = 'Scan Networks';
+      scanButton.disabled = false;
+    });
+}
+
+function selectNetwork(ssid) {
+  document.getElementById('ssid').value = ssid;
+}
+
+function saveWifiConfig() {
+  const mode = document.querySelector('input[name="wifiModeSelect"]:checked').value;
+  const ssid = document.getElementById('ssid').value;
+  const password = document.getElementById('pwd').value;
+  const apPassword = document.getElementById('apPassword').value;
+  
+  const config = {
+    mode: mode,
+    ssid: ssid,
+    password: password,
+    apPassword: apPassword
+  };
+  
+  if (mode === 'STA' && !ssid.trim()) {
+    alert('Please enter WiFi network name (SSID)');
+    return;
+  }
+  
+  const saveButton = event.target;
+  saveButton.textContent = 'Saving...';
+  saveButton.disabled = true;
+  
+  fetch('/api/wifi/config', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(config)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('WiFi configuration saved! Device will restart in 3 seconds...');
+      setTimeout(() => {
+        restartDevice();
+      }, 3000);
+    } else {
+      alert('Failed to save WiFi configuration: ' + data.error);
+    }
+  })
+  .catch(error => {
+    console.error('Failed to save WiFi config:', error);
+    alert('Failed to save WiFi configuration');
+  })
+  .finally(() => {
+    saveButton.textContent = 'Save & Apply WiFi Settings';
+    saveButton.disabled = false;
+  });
+}
+
+function resetWifiConfig() {
+  if (confirm('Reset WiFi settings to default (Access Point mode)?')) {
+    fetch('/api/wifi/reset', { method: 'POST' })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('WiFi settings reset! Device will restart...');
+          setTimeout(() => {
+            restartDevice();
+          }, 2000);
+        }
+      })
+      .catch(error => {
+        console.error('Failed to reset WiFi:', error);
+      });
+  }
+}
+
+function restartDevice() {
+  if (confirm('Restart device? This will interrupt current connection.')) {
+    fetch('/api/system/restart', { method: 'POST' })
+      .then(() => {
+        alert('Device is restarting... Please reconnect in 30 seconds.');
+      })
+      .catch(error => {
+        console.log('Restart command sent');
+      });
+  }
+}
+
+// Initialize WiFi tab when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  initWiFiTab();
+  
+  // Завантажуємо статус WiFi при завантаженні
+  loadWiFiStatus();
+  
+  // Завантажуємо статус батареї при завантаженні
+  loadBatteryStatus();
+  
+  // Оновлюємо статус батареї кожну хвилину
+  setInterval(loadBatteryStatus, 60000);
+  
+  // Initialize network tab
+  initNetworkTab();
+  
+  // Auto-refresh nodes table in Master mode every 10 seconds
+  setInterval(() => {
+    if (document.getElementById('deviceMode') && 
+        document.getElementById('deviceMode').value == '1' && 
+        document.getElementById('masterConfig') &&
+        document.getElementById('masterConfig').style.display !== 'none') {
+      loadRegisteredNodes();
+    }
+  }, 10000);
+});
+
+// Master-Slave Network Functions
+function initNetworkTab() {
+  const deviceModeSelect = document.getElementById('deviceMode');
+  if (!deviceModeSelect) return; // Network tab not loaded yet
+  
+  const masterConfig = document.getElementById('masterConfig');
+  const slaveConfig = document.getElementById('slaveConfig');
+  const standaloneConfig = document.getElementById('standaloneConfig');
+  
+  // Handle device mode changes
+  deviceModeSelect.addEventListener('change', function() {
+    const mode = parseInt(this.value);
+    
+    // Hide all configs first
+    masterConfig.style.display = 'none';
+    slaveConfig.style.display = 'none';
+    standaloneConfig.style.display = 'none';
+    
+    // Show appropriate config
+    switch(mode) {
+      case 0: // Standalone
+        standaloneConfig.style.display = 'block';
+        break;
+      case 1: // Master
+        masterConfig.style.display = 'block';
+        loadRegisteredNodes();
+        break;
+      case 2: // Slave
+        slaveConfig.style.display = 'block';
+        break;
+    }
+  });
+  
+  // Test master connection button
+  const testButton = document.getElementById('testMasterConnection');
+  if (testButton) {
+    testButton.addEventListener('click', testMasterConnection);
+  }
+  
+  // Save network config button
+  const saveButton = document.getElementById('saveNetworkConfig');
+  if (saveButton) {
+    saveButton.addEventListener('click', saveNetworkConfig);
+  }
+  
+  // Reset network config button
+  const resetButton = document.getElementById('resetNetworkConfig');
+  if (resetButton) {
+    resetButton.addEventListener('click', resetNetworkConfig);
+  }
+  
+  // Load current configuration
+  loadNetworkConfig();
+}
+
+function loadNetworkConfig() {
+  fetch('/config')
+    .then(response => response.json())
+    .then(data => {
+      const deviceMode = document.getElementById('deviceMode');
+      const masterIP = document.getElementById('masterIP');
+      const nodeChannel = document.getElementById('nodeChannel');
+      
+      if (deviceMode) {
+        deviceMode.value = data.deviceMode || 0;
+        deviceMode.dispatchEvent(new Event('change'));
+      }
+      
+      if (masterIP) {
+        masterIP.value = data.masterIP || '192.168.4.1';
+      }
+      
+      if (nodeChannel) {
+        nodeChannel.value = data.nodeChannel || 1;
+      }
+    })
+    .catch(error => console.error('Failed to load network config:', error));
+}
+
+function loadRegisteredNodes() {
+  fetch('/api/nodes/list')
+    .then(response => response.json())
+    .then(data => {
+      const table = document.querySelector('#nodesTable table');
+      const nodeCountEl = document.getElementById('nodeCount');
+      if (!table) return;
+      
+      // Clear existing rows (except header)
+      const rows = table.querySelectorAll('tr:not(:first-child)');
+      rows.forEach(row => row.remove());
+      
+      const nodeCount = data.nodes ? data.nodes.length : 0;
+      if (nodeCountEl) {
+        nodeCountEl.textContent = nodeCount;
+        nodeCountEl.style.color = nodeCount >= 7 ? '#dc3545' : '#28a745';
+      }
+      
+      if (data.nodes && data.nodes.length > 0) {
+        data.nodes.forEach(node => {
+          const row = table.insertRow();
+          row.innerHTML = `
+            <td>${node.nodeId}</td>
+            <td><a href="http://${node.ipAddress}" target="_blank">${node.ipAddress}</a></td>
+            <td>Channel ${node.channel}</td>
+            <td><span class="status-${node.isActive ? 'active' : 'inactive'}">${node.isActive ? 'Active' : 'Inactive'}</span></td>
+            <td>${node.totalLaps > 0 ? (node.lastLapTime/1000).toFixed(3) + 's' : 'N/A'}</td>
+            <td><button onclick="removeNode('${node.nodeId}')" class="btn-danger">Remove</button></td>
+          `;
+        });
+      } else {
+        const row = table.insertRow();
+        row.innerHTML = '<td colspan="6">No slave nodes registered</td>';
+      }
+    })
+    .catch(error => console.error('Failed to load nodes:', error));
+}
+
+function removeNode(nodeId) {
+  if (confirm(`Remove node "${nodeId}"?`)) {
+    fetch('/api/nodes/remove', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `nodeId=${nodeId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        loadRegisteredNodes(); // Reload the table
+      } else {
+        alert('Failed to remove node');
+      }
+    })
+    .catch(error => console.error('Failed to remove node:', error));
+  }
+}
+
+function testMasterConnection() {
+  const masterIP = document.getElementById('masterIP').value;
+  const nodeId = document.getElementById('pname').value || 'TestNode';
+  const channel = document.getElementById('nodeChannel').value;
+  const statusEl = document.getElementById('connectionStatus');
+  
+  statusEl.textContent = 'Testing connection...';
+  statusEl.className = 'status-message status-pending';
+  
+  // Test connection to master
+  fetch(`http://${masterIP}/api/node/register`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `nodeId=${nodeId}&channel=${channel}`
+  })
+  .then(response => response.json().then(data => ({status: response.status, data})))
+  .then(({status, data}) => {
+    if (status === 200 && data.success) {
+      statusEl.textContent = `✅ Connected to Master! Assigned to Channel ${data.assignedChannel}`;
+      statusEl.className = 'status-message status-success';
+    } else if (status === 400 && data.error) {
+      // Handle specific error messages from master
+      if (data.error.includes('Maximum 7 slave nodes')) {
+        statusEl.textContent = '⚠️ Master network is full (7/7 slaves). Try again later or contact race coordinator.';
+        statusEl.className = 'status-message status-warning';
+      } else if (data.error.includes('nodeId and channel required')) {
+        statusEl.textContent = '❌ Missing Node ID or Channel. Please fill all fields.';
+        statusEl.className = 'status-message status-error';
+      } else if (data.error.includes('nodeId cannot be empty')) {
+        statusEl.textContent = '❌ Node ID cannot be empty. Please enter a pilot name or node identifier.';
+        statusEl.className = 'status-message status-error';
+      } else if (data.error.includes('Invalid channel')) {
+        statusEl.textContent = '❌ Invalid channel selected. Please choose a channel between 1-8.';
+        statusEl.className = 'status-message status-error';
+      } else {
+        statusEl.textContent = '❌ Connection failed: ' + data.error;
+        statusEl.className = 'status-message status-error';
+      }
+    } else {
+      statusEl.textContent = '❌ Connection failed: ' + (data.message || data.error || 'Unknown error');
+      statusEl.className = 'status-message status-error';
+    }
+  })
+  .catch(error => {
+    statusEl.textContent = `❌ Cannot reach master at ${masterIP}. Check Master IP and network connection.`;
+    statusEl.className = 'status-message status-error';
+    console.error('Connection test failed:', error);
+  });
+}
+
+function saveNetworkConfig() {
+  const deviceMode = document.getElementById('deviceMode').value;
+  const masterIP = document.getElementById('masterIP').value;
+  const nodeChannel = document.getElementById('nodeChannel').value;
+  
+  const config = {
+    deviceMode: parseInt(deviceMode),
+    masterIP: masterIP,
+    nodeChannel: parseInt(nodeChannel)
+  };
+  
+  fetch('/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(config)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success || response.ok) {
+      alert('Network configuration saved! Device will restart to apply changes.');
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } else {
+      alert('Failed to save configuration');
+    }
+  })
+  .catch(error => {
+    console.error('Error saving config:', error);
+    alert('Failed to save configuration');
+  });
+}
+
+function resetNetworkConfig() {
+  if (confirm('Reset to Standalone mode? This will restart the device.')) {
+    const config = {
+      deviceMode: 0, // Standalone
+      masterIP: '192.168.4.1',
+      nodeChannel: 1
+    };
+    
+    fetch('/config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(config)
+    })
+    .then(() => {
+      alert('Reset to Standalone mode! Device restarting...');
+      setTimeout(() => window.location.reload(), 2000);
+    })
+    .catch(error => console.error('Reset failed:', error));
   }
 }

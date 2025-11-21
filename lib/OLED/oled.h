@@ -16,7 +16,7 @@
 class OledDisplay {
    public:
     void init(int sda_pin, int scl_pin);
-    void displayWiFiInfo(const String& ssid, const String& ip, wifi_mode_t mode, const String& channel_info = "", bool blinkBand = false, const String& raceStatus = "", bool timerActive = false);
+    void displayWiFiInfo(const String& ssid, const String& ip, wifi_mode_t mode, const String& channel_info = "", bool blinkBand = false, const String& raceStatus = "", bool timerActive = false, float batteryVoltage = 0.0);
     void displayMessage(const String& line1, const String& line2 = "", const String& line3 = "", const String& line4 = "");
     void clear();
     void update();
@@ -30,4 +30,5 @@ class OledDisplay {
     static const uint32_t BLINK_INTERVAL = 500; // 500мс
     void centerText(const String& text, int y);
     bool shouldShowBlinkingText(uint32_t currentTime);
+    void drawBatteryIndicator(float voltage, int x, int y);
 };

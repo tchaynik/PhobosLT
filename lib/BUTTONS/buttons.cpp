@@ -43,7 +43,9 @@ const uint16_t* FPVChannels::getBandChannels(uint8_t band) {
 
 void ButtonHandler::init() {
     pinMode(BUTTON_BOOT_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_CHANNEL_PIN, INPUT_PULLUP);
     lastBootButtonState = digitalRead(BUTTON_BOOT_PIN);
+    lastChannelButtonState = digitalRead(BUTTON_CHANNEL_PIN);
 }
 
 void ButtonHandler::handleButtons(uint32_t currentTimeMs) {

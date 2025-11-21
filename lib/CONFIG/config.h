@@ -23,19 +23,20 @@
 //ESP23-C3
 #if defined(ESP32C3)
 
-#define PIN_LED 1
-#define PIN_VBAT 0
+#define PIN_LED 4             // GPIO4 - STATUS LED
+#define PIN_VBAT 10           // GPIO10 - Контроль батареї 
 #define VBAT_SCALE 2
 #define VBAT_ADD 2
-#define PIN_RX5808_RSSI 3
-#define PIN_RX5808_DATA 6     //CH1
-#define PIN_RX5808_SELECT 7   //CH2
-#define PIN_RX5808_CLOCK 4    //CH3
-#define PIN_BUZZER 2          // GPIO2 (рекомендований)
+#define PIN_RX5808_RSSI 9     // GPIO9 - Аналоговий сигнал RSSI
+#define PIN_RX5808_DATA 6     // GPIO6 - Дані для RX5808
+#define PIN_RX5808_SELECT 7   // GPIO7 - Вибір каналу RX5808  
+#define PIN_RX5808_CLOCK 8    // GPIO8 - Тактування RX5808
+#define PIN_BUZZER 5          // GPIO5 - П'єзо зумер
 #define BUZZER_INVERTED false
-#define PIN_OLED_SDA 5        // GPIO5 згідно схеми
-#define PIN_OLED_SCL 8        // GPIO8 згідно схеми
-#define PIN_BUTTON_BOOT 9     // Кнопка BOOT для зміни каналів
+#define PIN_OLED_SDA 2        // GPIO2 - I2C SDA для OLED
+#define PIN_OLED_SCL 3        // GPIO3 - I2C SCL для OLED  
+#define PIN_BUTTON_BOOT 0     // GPIO0 - Кнопка BOOT (таймер)
+#define PIN_BUTTON_CHANNEL 1  // GPIO1 - Кнопка зміни каналу
 
 //ESP32-S3
 #elif defined(ESP32S3)
@@ -147,6 +148,13 @@ inline int getChannelFrequency(const String& channelInfo) {
     return 5658; // За замовчуванням R1
 }
 
+// Device operation modes for Master-Slave architecture
+enum DeviceMode : uint8_t {
+    MODE_STANDALONE = 0,  // Single node operation (default)
+    MODE_MASTER = 1,      // Master node - coordinates race
+    MODE_SLAVE = 2        // Slave node - reports to master
+};
+
 typedef struct {
     uint32_t version;
     uint16_t frequency;
@@ -156,9 +164,14 @@ typedef struct {
     uint8_t announcerRate;
     uint8_t enterRssi;
     uint8_t exitRssi;
-    char pilotName[21];
+    char nodeId[21];        // Renamed from pilotName - can be pilot name or node identifier
     char ssid[33];
     char password[33];
+    uint8_t wifiMode;       // 0=AP, 1=STA
+    uint8_t batteryWarningLevel; // Поріг попередження про батарею (%)
+    uint8_t deviceMode;     // DeviceMode: Standalone/Master/Slave
+    char masterIP[16];      // IP address of Master node (for Slave mode)
+    uint8_t nodeChannel;    // Channel assignment for this node (1-8)
 } laptimer_config_t;
 
 class Config {
@@ -176,10 +189,25 @@ class Config {
     void setFrequency(uint16_t frequency);
     uint32_t getMinLapMs();
     uint8_t getAlarmThreshold();
+    uint8_t getBatteryWarningLevel();
     uint8_t getEnterRssi();
     uint8_t getExitRssi();
     char* getSsid();
     char* getPassword();
+    void setSsid(const char* ssid);
+    void setPassword(const char* password);
+    uint8_t getWiFiMode();
+    void setWiFiMode(uint8_t mode);
+    
+    // Master-Slave architecture methods
+    char* getNodeId();
+    void setNodeId(const char* nodeId);
+    DeviceMode getDeviceMode();
+    void setDeviceMode(DeviceMode mode);
+    char* getMasterIP();
+    void setMasterIP(const char* ip);
+    uint8_t getNodeChannel();
+    void setNodeChannel(uint8_t channel);
 
    private:
     laptimer_config_t conf;

@@ -21,7 +21,9 @@
       </nav>
       <ul class="nav-links">
         <li><a id="nav-link-config" class="tablinks active" onclick="openTab(event, 'config')">Configuration</a></li>
-        <li><a id="nav-link-race" class="tablinks" onclick="openTab(event, 'race')">Race</a></li>
+        <li><a id="nav-link-race" class="tablinks" onclick="openTab(event, 'race')">🏁 Race</a></li>
+        <li><a id="nav-link-network" class="tablinks" onclick="openTab(event, 'network')">🌐 Network</a></li>
+        <li><a id="nav-link-wifi" class="tablinks" onclick="openTab(event, 'wifi')">WiFi</a></li>
         <li><a id="nav-link-calib" class="tablinks" onclick="openTab(event, 'calib')">Calibration</a></li>
         <li><a id="nav-link-ota" class="tablinks" onclick="openTab(event, 'ota')">Update</a></li>
       </ul>
@@ -98,23 +100,13 @@
           </div>
 
           <div class="config-item">
-            <label for="pname">Pilot name:</label>
-            <input type="text" id="pname" maxlength="20" />
+            <label for="pname">Node ID / Pilot name:</label>
+            <input type="text" id="pname" maxlength="20" placeholder="Enter node identifier or pilot name" />
           </div>
 
           <div class="config-item">
             <label for="bvolt">Battery voltage:</label>
             <span class="val" id="bvolt"></span>
-          </div>
-
-          <div class="config-item" style="display: none">
-            <label for="ssid">WiFi SSID:</label>
-            <input type="text" id="ssid" maxlength="32" />
-          </div>
-
-          <div class="config-item" style="display: none">
-            <label for="pwd">WiFi Password:</label>
-            <input type="password" id="pwd" maxlength="32" />
           </div>
         </div>
         <button id="EnableAudioButton" onclick="enableAudioLoop()">Enable voice</button>
@@ -139,6 +131,201 @@
             <th>3 Lap Time</th>
           </tr>
         </table>
+      </div>
+
+      <!-- Network/Master-Slave Configuration Tab -->
+      <div id="network" class="tabcontent">
+        <div class="network-container">
+          <h2>🌐 Network & Master-Slave Configuration</h2>
+          
+          <div class="config-section">
+            <h3>Device Mode</h3>
+            <div class="config-item">
+              <label>Operation Mode:</label>
+              <select id="deviceMode">
+                <option value="0">🔹 Standalone (Single Node)</option>
+                <option value="1">🎖️ Master (Race Coordinator)</option>
+                <option value="2">👤 Slave (Detection Node)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="masterConfig" class="config-section" style="display:none;">
+            <h3>🎖️ Master Configuration</h3>
+            <p>Master mode: This device will coordinate the race and collect data from slave nodes.</p>
+            <p><strong>Network limit:</strong> 1 Master + 7 Slaves (8 devices total)</p>
+            <div id="nodesTable" class="nodes-table">
+              <h4>Connected Nodes (<span id="nodeCount">0</span>/7)</h4>
+              <table>
+                <tr>
+                  <th>Node ID</th>
+                  <th>IP Address</th>
+                  <th>Channel</th>
+                  <th>Status</th>
+                  <th>Last Lap</th>
+                  <th>Actions</th>
+                </tr>
+                <tr id="noNodesRow">
+                  <td colspan="6">No slave nodes connected</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div id="slaveConfig" class="config-section" style="display:none;">
+            <h3>👤 Slave Configuration</h3>
+            <div class="config-item">
+              <label for="masterIP">Master IP Address:</label>
+              <input type="text" id="masterIP" maxlength="15" placeholder="192.168.4.1" />
+              <small>Enter the IP address of the Master device</small>
+            </div>
+            <div class="config-item">
+              <label for="nodeChannel">Detection Channel:</label>
+              <select id="nodeChannel">
+                <option value="1">Channel 1</option>
+                <option value="2">Channel 2</option>
+                <option value="3">Channel 3</option>
+                <option value="4">Channel 4</option>
+                <option value="5">Channel 5</option>
+                <option value="6">Channel 6</option>
+                <option value="7">Channel 7</option>
+                <option value="8">Channel 8</option>
+              </select>
+              <small>Select the FPV channel this node will monitor</small>
+            </div>
+            <div class="config-actions">
+              <button id="testMasterConnection" class="btn-primary">🔍 Test Master Connection</button>
+            </div>
+            <div id="connectionStatus" class="status-message"></div>
+            
+            <div class="info-box">
+              <h4>📡 Network Status</h4>
+              <p><strong>Current Mode:</strong> Slave Node</p>
+              <p><strong>Network Limit:</strong> Master supports up to 7 slave nodes</p>
+              <p><strong>Note:</strong> If master network is full, you'll need to wait for a slot or contact the race coordinator.</p>
+            </div>
+          </div>
+
+          <div id="standaloneConfig" class="config-section">
+            <h3>🔹 Standalone Configuration</h3>
+            <p>Standalone mode: This device operates independently as a single lap timer.</p>
+            <div class="info-box">
+              <h4>💡 Future Enhancement</h4>
+              <p>Planning: External PC web service as Master coordinator for multiple IoT lap timer slaves.</p>
+            </div>
+          </div>
+
+          <div class="config-actions">
+            <button id="saveNetworkConfig" class="btn-primary">💾 Save Network Configuration</button>
+            <button id="resetNetworkConfig" class="btn-secondary">🔄 Reset to Standalone</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="wifi" class="tabcontent">
+        <div class="wifi-container">
+          <h2>WiFi Configuration</h2>
+          
+          <div class="wifi-status">
+            <h3>Current Status</h3>
+            <div class="config-item">
+              <label>Mode:</label>
+              <span class="val" id="wifiMode">Access Point</span>
+            </div>
+            <div class="config-item">
+              <label>SSID:</label>
+              <span class="val" id="currentSSID">PhobosLT-XXXX</span>
+            </div>
+            <div class="config-item">
+              <label>IP Address:</label>
+              <span class="val" id="ipAddress">192.168.4.1</span>
+            </div>
+            <div class="config-item">
+              <label>Signal Strength:</label>
+              <span class="val" id="signalStrength">N/A</span>
+            </div>
+          </div>
+
+          <div class="battery-status">
+            <h3>Battery Status</h3>
+            <div class="config-item">
+              <label>Voltage:</label>
+              <span class="val" id="batteryVoltage">0.0V</span>
+            </div>
+            <div class="config-item">
+              <label>Charge Level:</label>
+              <div class="battery-indicator">
+                <div class="battery-bar">
+                  <div class="battery-fill" id="batteryFill"></div>
+                </div>
+                <span class="val" id="batteryPercentage">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wifi-settings">
+            <h3>WiFi Mode</h3>
+            <div class="config-item">
+              <label>
+                <input type="radio" name="wifiModeSelect" value="AP" checked> 
+                Access Point Mode
+              </label>
+              <small>Creates own WiFi network (PhobosLT-XXXX)</small>
+            </div>
+            <div class="config-item">
+              <label>
+                <input type="radio" name="wifiModeSelect" value="STA"> 
+                Client Mode
+              </label>
+              <small>Connect to existing WiFi network</small>
+            </div>
+          </div>
+
+          <div class="wifi-client-config" id="clientConfig" style="display: none">
+            <h3>Connect to WiFi Network</h3>
+            <div class="config-item">
+              <label for="ssid">Network SSID:</label>
+              <input type="text" id="ssid" maxlength="32" placeholder="Your WiFi network name" />
+            </div>
+            <div class="config-item">
+              <label for="pwd">Password:</label>
+              <input type="password" id="pwd" maxlength="64" placeholder="WiFi password" />
+            </div>
+            <div class="config-item">
+              <button onclick="scanWifiNetworks()">Scan Networks</button>
+            </div>
+            <div class="wifi-scan-results" id="wifiScanResults" style="display: none">
+              <h4>Available Networks:</h4>
+              <div id="networkList"></div>
+            </div>
+          </div>
+
+          <div class="wifi-ap-config" id="apConfig">
+            <h3>Access Point Settings</h3>
+            <div class="config-item">
+              <label for="apSSID">AP Name:</label>
+              <input type="text" id="apSSID" maxlength="32" placeholder="PhobosLT-XXXX" readonly />
+              <small>Generated automatically from device MAC</small>
+            </div>
+            <div class="config-item">
+              <label for="apPassword">AP Password:</label>
+              <input type="password" id="apPassword" maxlength="32" placeholder="Leave empty for open network" />
+            </div>
+          </div>
+
+          <div class="wifi-actions">
+            <button onclick="saveWifiConfig()" class="save-btn">Save & Apply WiFi Settings</button>
+            <button onclick="resetWifiConfig()" class="reset-btn">Reset to Defaults</button>
+            <button onclick="restartDevice()" class="restart-btn">Restart Device</button>
+          </div>
+
+          <div class="wifi-info">
+            <h3>Information</h3>
+            <p><strong>Access Point Mode:</strong> Device creates its own WiFi network. Connect devices directly to PhobosLT.</p>
+            <p><strong>Client Mode:</strong> Device connects to existing WiFi network. All devices on same network can access PhobosLT.</p>
+            <p><strong>Note:</strong> Changing WiFi mode requires device restart to take effect.</p>
+          </div>
+        </div>
       </div>
 
       <div id="calib" class="tabcontent">
@@ -170,7 +357,17 @@
     </main>
 
     <footer>
-      <p>Powered by <a href="https://github.com/phobos-/PhobosLT" target="_blank" style="color: white">PhobosLT</a></p>
+      <div class="footer-content">
+        <div class="footer-battery">
+          <div class="battery-indicator">
+            <div class="battery-bar">
+              <div class="battery-fill" id="footerBatteryFill"></div>
+            </div>
+            <span class="battery-text" id="footerBatteryText">0.0V (0%)</span>
+          </div>
+        </div>
+        <p class="footer-link">Powered by <a href="https://github.com/phobos-/PhobosLT" target="_blank">PhobosLT</a></p>
+      </div>
     </footer>
 
     <script src="script.js"></script>

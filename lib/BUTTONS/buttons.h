@@ -4,8 +4,9 @@
 #include <Arduino.h>
 
 // Піни кнопок на ESP32C3
-#define BUTTON_BOOT_PIN 9    // Кнопка BOOT
-#define BUTTON_RST_PIN  -1   // RST кнопка (спеціальна обробка)
+#define BUTTON_BOOT_PIN 0     // GPIO0 - Кнопка BOOT (таймер)
+#define BUTTON_CHANNEL_PIN 1  // GPIO1 - Кнопка зміни каналу  
+#define BUTTON_RST_PIN  -1    // RST кнопка (спеціальна обробка)
 
 // Стандартні частоти FPV каналів (MHz)
 class FPVChannels {
@@ -61,6 +62,13 @@ private:
     bool lastBootButtonState = false;
     uint32_t lastBootButtonTime = 0;
     uint32_t buttonPressStartTime = 0;
+    
+    // Друга кнопка для зміни каналів
+    bool channelButtonPressed = false;
+    bool lastChannelButtonState = false;  
+    uint32_t lastChannelButtonTime = 0;
+    uint32_t channelButtonPressStartTime = 0;
+    
     uint32_t buttonDebounceTime = 50; // 50ms debounce
     uint32_t longPressTime = 800;     // 800ms для довгого натискання (зміна бенду)
     uint32_t veryLongPressTime = 3000; // 3000ms для дуже довгого натискання (таймер)

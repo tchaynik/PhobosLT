@@ -48,7 +48,7 @@ void Config::write(void) {
 
 void Config::toJson(AsyncResponseStream& destination) {
     // Use https://arduinojson.org/v6/assistant to estimate memory
-    DynamicJsonDocument config(256);
+    JsonDocument config;
     config["freq"] = conf.frequency;
     config["minLap"] = conf.minLap;
     config["alarm"] = conf.alarm;
@@ -56,14 +56,17 @@ void Config::toJson(AsyncResponseStream& destination) {
     config["anRate"] = conf.announcerRate;
     config["enterRssi"] = conf.enterRssi;
     config["exitRssi"] = conf.exitRssi;
-    config["name"] = conf.pilotName;
+    config["name"] = conf.nodeId;  // Changed from pilotName to nodeId
     config["ssid"] = conf.ssid;
     config["pwd"] = conf.password;
+    config["deviceMode"] = conf.deviceMode;
+    config["masterIP"] = conf.masterIP;
+    config["nodeChannel"] = conf.nodeChannel;
     serializeJson(config, destination);
 }
 
 void Config::toJsonString(char* buf) {
-    DynamicJsonDocument config(256);
+    JsonDocument config;
     config["freq"] = conf.frequency;
     config["minLap"] = conf.minLap;
     config["alarm"] = conf.alarm;
@@ -71,9 +74,12 @@ void Config::toJsonString(char* buf) {
     config["anRate"] = conf.announcerRate;
     config["enterRssi"] = conf.enterRssi;
     config["exitRssi"] = conf.exitRssi;
-    config["name"] = conf.pilotName;
+    config["name"] = conf.nodeId;  // Changed from pilotName to nodeId
     config["ssid"] = conf.ssid;
     config["pwd"] = conf.password;
+    config["deviceMode"] = conf.deviceMode;
+    config["masterIP"] = conf.masterIP;
+    config["nodeChannel"] = conf.nodeChannel;
     serializeJsonPretty(config, buf, 256);
 }
 
@@ -106,8 +112,8 @@ void Config::fromJson(JsonObject source) {
         conf.exitRssi = source["exitRssi"];
         modified = true;
     }
-    if (source["name"] != conf.pilotName) {
-        strlcpy(conf.pilotName, source["name"] | "", sizeof(conf.pilotName));
+    if (source["name"] != conf.nodeId) {  // Changed from pilotName to nodeId
+        strlcpy(conf.nodeId, source["name"] | "", sizeof(conf.nodeId));
         modified = true;
     }
     if (source["ssid"] != conf.ssid) {
@@ -116,6 +122,18 @@ void Config::fromJson(JsonObject source) {
     }
     if (source["pwd"] != conf.password) {
         strlcpy(conf.password, source["pwd"] | "", sizeof(conf.password));
+        modified = true;
+    }
+    if (source["deviceMode"] != conf.deviceMode) {
+        conf.deviceMode = source["deviceMode"];
+        modified = true;
+    }
+    if (source["masterIP"] != conf.masterIP) {
+        strlcpy(conf.masterIP, source["masterIP"] | "192.168.4.1", sizeof(conf.masterIP));
+        modified = true;
+    }
+    if (source["nodeChannel"] != conf.nodeChannel) {
+        conf.nodeChannel = source["nodeChannel"];
         modified = true;
     }
 }
@@ -135,6 +153,10 @@ uint32_t Config::getMinLapMs() {
 
 uint8_t Config::getAlarmThreshold() {
     return conf.alarm;
+}
+
+uint8_t Config::getBatteryWarningLevel() {
+    return conf.batteryWarningLevel;
 }
 
 uint8_t Config::getEnterRssi() {
@@ -165,9 +187,14 @@ void Config::setDefaults(void) {
     conf.announcerRate = 10;
     conf.enterRssi = 120;
     conf.exitRssi = 100;
+    conf.wifiMode = 0; // 0 = AP mode за замовчуванням
+    conf.batteryWarningLevel = 10; // 10% за замовчуванням
+    conf.deviceMode = MODE_STANDALONE; // Standalone за замовчуванням
+    conf.nodeChannel = 1; // Channel 1 за замовчуванням
     strlcpy(conf.ssid, "", sizeof(conf.ssid));
     strlcpy(conf.password, "", sizeof(conf.password));
-    strlcpy(conf.pilotName, "", sizeof(conf.pilotName));
+    strlcpy(conf.nodeId, "", sizeof(conf.nodeId));  // Changed from pilotName
+    strlcpy(conf.masterIP, "192.168.4.1", sizeof(conf.masterIP));
     modified = true;
     write();
 }
@@ -176,5 +203,76 @@ void Config::handleEeprom(uint32_t currentTimeMs) {
     if (modified && ((currentTimeMs - checkTimeMs) > EEPROM_CHECK_TIME_MS)) {
         checkTimeMs = currentTimeMs;
         write();
+    }
+}
+
+// WiFi configuration methods
+void Config::setSsid(const char* ssid) {
+    if (strcmp(conf.ssid, ssid) != 0) {
+        strlcpy(conf.ssid, ssid, sizeof(conf.ssid));
+        modified = true;
+    }
+}
+
+void Config::setPassword(const char* password) {
+    if (strcmp(conf.password, password) != 0) {
+        strlcpy(conf.password, password, sizeof(conf.password));
+        modified = true;
+    }
+}
+
+uint8_t Config::getWiFiMode() {
+    return conf.wifiMode;
+}
+
+void Config::setWiFiMode(uint8_t mode) {
+    if (conf.wifiMode != mode) {
+        conf.wifiMode = mode;
+        modified = true;
+    }
+}
+
+// Master-Slave architecture methods
+char* Config::getNodeId() {
+    return conf.nodeId;
+}
+
+void Config::setNodeId(const char* nodeId) {
+    if (strcmp(conf.nodeId, nodeId) != 0) {
+        strlcpy(conf.nodeId, nodeId, sizeof(conf.nodeId));
+        modified = true;
+    }
+}
+
+DeviceMode Config::getDeviceMode() {
+    return static_cast<DeviceMode>(conf.deviceMode);
+}
+
+void Config::setDeviceMode(DeviceMode mode) {
+    if (conf.deviceMode != static_cast<uint8_t>(mode)) {
+        conf.deviceMode = static_cast<uint8_t>(mode);
+        modified = true;
+    }
+}
+
+char* Config::getMasterIP() {
+    return conf.masterIP;
+}
+
+void Config::setMasterIP(const char* ip) {
+    if (strcmp(conf.masterIP, ip) != 0) {
+        strlcpy(conf.masterIP, ip, sizeof(conf.masterIP));
+        modified = true;
+    }
+}
+
+uint8_t Config::getNodeChannel() {
+    return conf.nodeChannel;
+}
+
+void Config::setNodeChannel(uint8_t channel) {
+    if (conf.nodeChannel != channel) {
+        conf.nodeChannel = channel;
+        modified = true;
     }
 }

@@ -99,6 +99,12 @@ void setup() {
 #ifdef ESP32C3
     oled.init(PIN_OLED_SDA, PIN_OLED_SCL);
 #endif
+
+#ifdef DEBUG_OUT
+    DEBUG("PhobosLT ESP32C3 - DEBUG MODE ENABLED\n");
+    DEBUG("Serial baud: %d\n", SERIAL_BAUD);
+    DEBUG("Free heap: %d bytes\n", ESP.getFreeHeap());
+#endif
     
     config.init();
     rx.init();
@@ -139,6 +145,23 @@ void setup() {
     led.on(400);
     buzzer.beep(200);
     initParallelTask();
+    
+    // Виводимо стартову інформацію
+    const char* deviceModeNames[] = {"Standalone", "Master", "Slave"};
+    uint8_t mode = config.getDeviceMode();
+    
+#ifdef DEBUG_OUT
+    DEBUG("=== PhobosLT Ready ===\n");
+    DEBUG("Device Mode: %s\n", deviceModeNames[mode]);
+    DEBUG("Node ID: %s\n", config.getNodeId());
+    if (mode == MODE_SLAVE) {
+        DEBUG("Master IP: %s\n", config.getMasterIP());
+        DEBUG("Channel: %d\n", config.getNodeChannel());
+    }
+    DEBUG("MAC Address: %s\n", WiFi.macAddress().c_str());
+    DEBUG("Free heap: %d bytes\n", ESP.getFreeHeap());
+    DEBUG("=====================\n");
+#endif
 }
 
 void loop() {

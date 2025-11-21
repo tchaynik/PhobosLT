@@ -25,7 +25,7 @@ void OledDisplay::init(int sda_pin, int scl_pin) {
     delay(2000);
 }
 
-void OledDisplay::displayWiFiInfo(const String& ssid, const String& ip, wifi_mode_t mode, const String& channel_info, bool blinkBand, const String& raceStatus, bool timerActive) {
+void OledDisplay::displayWiFiInfo(const String& ssid, const String& ip, wifi_mode_t mode, const String& channel_info, bool blinkBand, const String& raceStatus, bool timerActive, float batteryVoltage) {
     if (!initialized) return;
     
     display->clearDisplay();
@@ -98,6 +98,16 @@ void OledDisplay::displayWiFiInfo(const String& ssid, const String& ip, wifi_mod
         display->print(String(frequency) + "MHz");
     }
     
+    // Рядок 4: Індикатор батареї (якщо напруга передана)
+    if (batteryVoltage > 0.0) {
+        // Малюємо індикатор батареї в правому нижньому куті
+        drawBatteryIndicator(batteryVoltage, SCREEN_WIDTH - 20, 30);
+        
+        // Показуємо напругу цифрами
+        display->setCursor(0, 30);
+        display->print(String(batteryVoltage, 1) + "V");
+    }
+    
     display->display();
 }
 
@@ -107,20 +117,6 @@ bool OledDisplay::shouldShowBlinkingText(uint32_t currentTime) {
         lastBlinkTime = currentTime;
     }
     return blinkState;
-}
-
-// Функція для отримання частоти каналу (спрощена версія)
-int getChannelFrequency(const String& channelInfo) {
-    // Базові частоти для демонстрації
-    if (channelInfo.startsWith("R1")) return 5658;
-    if (channelInfo.startsWith("R2")) return 5695;
-    if (channelInfo.startsWith("R3")) return 5732;
-    if (channelInfo.startsWith("R4")) return 5769;
-    if (channelInfo.startsWith("R5")) return 5806;
-    if (channelInfo.startsWith("R6")) return 5843;
-    if (channelInfo.startsWith("R7")) return 5880;
-    if (channelInfo.startsWith("R8")) return 5917;
-    return 5800; // За замовчуванням
 }
 
 void OledDisplay::displayMessage(const String& line1, const String& line2, const String& line3, const String& line4) {
@@ -169,4 +165,44 @@ void OledDisplay::centerText(const String& text, int y) {
     int x = (SCREEN_WIDTH - w) / 2;
     display->setCursor(x, y);
     display->print(text);
+}
+
+void OledDisplay::drawBatteryIndicator(float voltage, int x, int y) {
+    if (!initialized) return;
+    
+    // Розмір батареї для маленького екрану
+    const int batteryWidth = 16;
+    const int batteryHeight = 8;
+    const int tipWidth = 2;
+    const int tipHeight = 4;
+    
+    // Обчислюємо рівень заряду (3.0V - 4.2V)
+    float minVoltage = 3.0;
+    float maxVoltage = 4.2;
+    int chargeLevel = (int)((voltage - minVoltage) / (maxVoltage - minVoltage) * (batteryWidth - 2));
+    if (chargeLevel < 0) chargeLevel = 0;
+    if (chargeLevel > batteryWidth - 2) chargeLevel = batteryWidth - 2;
+    
+    // Малюємо корпус батареї
+    display->drawRect(x, y, batteryWidth, batteryHeight, SSD1306_WHITE);
+    
+    // Малюємо "носик" батареї
+    int tipX = x + batteryWidth;
+    int tipY = y + (batteryHeight - tipHeight) / 2;
+    display->fillRect(tipX, tipY, tipWidth, tipHeight, SSD1306_WHITE);
+    
+    // Малюємо рівень заряду
+    if (chargeLevel > 0) {
+        // Колір заливки залежно від рівня
+        bool shouldFill = true;
+        
+        // Якщо заряд низький - блимаємо
+        if (voltage < 3.3 && shouldShowBlinkingText(millis())) {
+            shouldFill = false;
+        }
+        
+        if (shouldFill) {
+            display->fillRect(x + 1, y + 1, chargeLevel, batteryHeight - 2, SSD1306_WHITE);
+        }
+    }
 }

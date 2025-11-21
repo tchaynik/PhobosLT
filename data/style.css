@@ -192,10 +192,120 @@ table tr:nth-child(even) {
 }
 
 footer {
-  text-align: center;
-  padding: 16px;
   background-color: var(--primary-color);
   color: white;
+  padding: 12px 16px;
+  margin-top: auto;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-battery {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-battery .battery-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-battery .battery-bar {
+  width: 60px;
+  height: 12px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.footer-battery .battery-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 4px;
+  transition: width 0.5s ease, background-color 0.5s ease;
+}
+
+.footer-battery .battery-fill.battery-critical {
+  background-color: #dc3545;
+  animation: footer-battery-blink 1s infinite;
+}
+
+.footer-battery .battery-fill.battery-low {
+  background-color: #ffc107;
+}
+
+.footer-battery .battery-fill.battery-medium {
+  background-color: #fd7e14;
+}
+
+.footer-battery .battery-fill.battery-high {
+  background-color: #28a745;
+}
+
+.footer-battery .battery-fill.battery-full {
+  background-color: #20c997;
+}
+
+.footer-battery .battery-bar::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 0 1px 1px 0;
+}
+
+.battery-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.footer-link {
+  font-size: 14px;
+  margin: 0;
+}
+
+.footer-link a {
+  color: white;
+  text-decoration: none;
+}
+
+.footer-link a:hover {
+  text-decoration: underline;
+}
+
+@keyframes footer-battery-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .footer-battery {
+    order: 1;
+  }
+  
+  .footer-link {
+    order: 2;
+  }
 }
 
 @media (max-width: 150px) {
@@ -238,5 +348,520 @@ footer {
   table th,
   table td {
       padding: 8px;
+  }
+}
+
+/* WiFi Configuration Styles */
+.wifi-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.wifi-status,
+.wifi-settings,
+.wifi-client-config,
+.wifi-ap-config,
+.wifi-info {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.wifi-status h3,
+.wifi-settings h3,
+.wifi-client-config h3,
+.wifi-ap-config h3,
+.wifi-info h3 {
+  color: var(--primary-color);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.wifi-settings label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.wifi-settings small {
+  color: #666;
+  font-weight: normal;
+  display: block;
+  margin-top: 5px;
+}
+
+.wifi-client-config input,
+.wifi-ap-config input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.wifi-actions {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.wifi-actions button {
+  margin: 0 10px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.save-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #218838;
+}
+
+.reset-btn {
+  background-color: #ffc107;
+  color: black;
+}
+
+.reset-btn:hover {
+  background-color: #e0a800;
+}
+
+.restart-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.restart-btn:hover {
+  background-color: #c82333;
+}
+
+.wifi-scan-results {
+  margin-top: 15px;
+}
+
+#networkList {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.network-item {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.network-item:hover {
+  background-color: #f8f9fa;
+}
+
+.network-item:last-child {
+  border-bottom: none;
+}
+
+.network-signal {
+  font-size: 12px;
+  color: #666;
+}
+
+.network-secure {
+  font-size: 12px;
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Battery Status Styles */
+.battery-status {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-left: 4px solid #28a745;
+}
+
+.battery-indicator {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.battery-bar {
+  width: 100px;
+  height: 20px;
+  background-color: #e9ecef;
+  border-radius: 10px;
+  border: 2px solid #333;
+  position: relative;
+  overflow: hidden;
+}
+
+.battery-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 8px;
+  transition: width 0.5s ease, background-color 0.5s ease;
+  position: relative;
+}
+
+/* Battery fill colors based on level */
+.battery-fill.battery-critical {
+  background-color: #dc3545;
+  animation: battery-blink 1s infinite;
+}
+
+.battery-fill.battery-low {
+  background-color: #ffc107;
+}
+
+.battery-fill.battery-medium {
+  background-color: #fd7e14;
+}
+
+.battery-fill.battery-high {
+  background-color: #28a745;
+}
+
+.battery-fill.battery-full {
+  background-color: #20c997;
+}
+
+/* Battery tip (положительный контакт) */
+.battery-bar::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 10px;
+  background-color: #333;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Blinking animation for critical battery */
+@keyframes battery-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+/* Network/Master-Slave Configuration Styles */
+.network-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.config-section {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.config-section h3 {
+  margin-bottom: 15px;
+  color: var(--primary-color);
+}
+
+.nodes-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.nodes-table th,
+.nodes-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nodes-table th {
+  background-color: var(--background-color);
+  font-weight: bold;
+}
+
+.status-active {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.status-inactive {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.status-message {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.status-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.status-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.config-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.info-box {
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.info-box h4 {
+  margin-bottom: 8px;
+  color: #0066cc;
+}
+
+.config-item small {
+  display: block;
+  margin-top: 4px;
+  color: #666;
+  font-size: 0.85em;
+}
+
+/* Network/Master-Slave Configuration Styles */
+.network-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.config-section {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.config-section h3 {
+  color: var(--primary-color);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.config-section h3::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: var(--primary-color);
+  margin-right: 10px;
+  border-radius: 2px;
+}
+
+.config-item {
+  margin-bottom: 15px;
+}
+
+.config-item label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: var(--secondary-color);
+}
+
+.config-item select,
+.config-item input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.config-item select:focus,
+.config-item input[type="text"]:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+/* Nodes table styles */
+.nodes-table {
+  margin-top: 20px;
+}
+
+.nodes-table h4 {
+  margin-bottom: 10px;
+  color: var(--secondary-color);
+}
+
+.nodes-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.nodes-table th,
+.nodes-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nodes-table th {
+  background-color: var(--background-color);
+  font-weight: bold;
+  color: var(--secondary-color);
+}
+
+.nodes-table .status-online {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.nodes-table .status-offline {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Status messages */
+.status-message {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.status-message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f1aeb5;
+}
+
+.status-message.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #b8daff;
+}
+
+/* Config actions */
+.config-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color-dark);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #2c2c31;
+}
+
+/* Responsive design for network tab */
+@media (max-width: 768px) {
+  .config-actions {
+    flex-direction: column;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+  
+  .nodes-table {
+    overflow-x: auto;
   }
 }
